@@ -1,0 +1,11 @@
+# Herramientas locales de previsualización (no se despliegan)
+.claude/
+*.ps1
+
+# Copia de trabajo local (el archivo desplegado es index.html)
+patrimonio-cripto.html
+
+# Sistema operativo
+Thumbs.db
+desktop.ini
+.DS_Store
