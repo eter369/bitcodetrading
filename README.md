@@ -1,8 +1,8 @@
-# BitCode Trading
+# Patrimonio Cripto · Omraam
 
-Panel de mercado cripto **en vivo** con precios en tiempo real desde la API pública de **Binance** (REST + WebSocket), calculadora de cartera y escenarios. Una sola página estática — sin framework ni build.
+Panel de **patrimonio cripto en vivo** con precios en tiempo real desde la API pública de **Binance** (REST + WebSocket), calculadora de cartera y escenarios. Una sola página estática — sin framework ni build.
 
-> **Demo:** las cifras de cartera son **datos de ejemplo**. Los precios de mercado son **reales y en vivo**. Esto **no es asesoría financiera**.
+> No es asesoría financiera.
 
 ## Características
 
