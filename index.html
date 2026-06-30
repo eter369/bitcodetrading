@@ -258,6 +258,7 @@
   .cmp-usd{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
   .cmp-usd .u{font-size:.46em;vertical-align:.34em;color:var(--gold);margin-right:2px}
   .cmp-eth{font-size:12px;color:var(--gold-soft);margin-top:5px;font-variant-numeric:tabular-nums}
+  .cmp-alloc{font-size:11px;color:var(--muted-2);margin-top:6px;font-variant-numeric:tabular-nums}
   .cmp-verdict{margin-top:16px;background:var(--panel);border:1px solid var(--line-soft);border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.6;color:var(--ink)}
   .cmp-verdict b.p{color:var(--pos)}.cmp-verdict b.r{color:var(--neg)}.cmp-verdict b.g{color:var(--gold-soft)}
   .cmp-verdict .tip{display:block;margin-top:8px;font-size:11.5px;color:var(--muted-2);line-height:1.6}
@@ -448,13 +449,13 @@
           <div class="cmp-h">Tu cartera</div>
           <div class="eth-f" style="margin-bottom:11px"><label for="cmpEthA">Cantidad ETH</label><div class="field"><input class="nopre" id="cmpEthA" type="number" value="90.7" step="0.1" inputmode="decimal"></div></div>
           <div class="sol-f"><label for="cmpSolA">Cantidad SOL</label><div class="field"><input class="nopre" id="cmpSolA" type="number" value="1001" step="1" inputmode="decimal"></div></div>
-          <div class="cmp-tot"><div class="cmp-usd"><span class="u">$</span><span id="cmpUsdA">0</span></div><div class="cmp-eth" id="cmpEthValA">= 0 ETH</div></div>
+          <div class="cmp-tot"><div class="cmp-usd"><span class="u">$</span><span id="cmpUsdA">0</span></div><div class="cmp-eth" id="cmpEthValA">= 0 ETH</div><div class="cmp-alloc" id="cmpAllocA"></div></div>
         </div>
         <div class="cmp-col sim">
           <div class="cmp-h">Simulación <span class="badge">¿qué pasaría si…?</span></div>
           <div class="eth-f" style="margin-bottom:11px"><label for="cmpEthB">Cantidad ETH</label><div class="field"><input class="nopre" id="cmpEthB" type="number" value="50" step="0.1" inputmode="decimal"></div></div>
           <div class="sol-f"><label for="cmpSolB">Cantidad SOL</label><div class="field"><input class="nopre" id="cmpSolB" type="number" value="2000" step="1" inputmode="decimal"></div></div>
-          <div class="cmp-tot"><div class="cmp-usd"><span class="u">$</span><span id="cmpUsdB">0</span></div><div class="cmp-eth" id="cmpEthValB">= 0 ETH</div></div>
+          <div class="cmp-tot"><div class="cmp-usd"><span class="u">$</span><span id="cmpUsdB">0</span></div><div class="cmp-eth" id="cmpEthValB">= 0 ETH</div><div class="cmp-alloc" id="cmpAllocB"></div></div>
         </div>
       </div>
       <div class="cmp-verdict" id="cmpVerdict"></div>
@@ -1017,16 +1018,30 @@
     var eP=cmpPricesEdited?(+$('cmpEthP').value||0):(live.ETH.price||0);
     var sP=cmpPricesEdited?(+$('cmpSolP').value||0):(live.SOL.price||0);
     var eA=+$('cmpEthA').value||0,sA=+$('cmpSolA').value||0,eB=+$('cmpEthB').value||0,sB=+$('cmpSolB').value||0;
-    var usdA=eP*eA+sP*sA,usdB=eP*eB+sP*sB,ethA=eP>0?usdA/eP:0,ethB=eP>0?usdB/eP:0;
+    var ethValA=eP*eA,solValA=sP*sA,usdA=ethValA+solValA;
+    var ethValB=eP*eB,solValB=sP*sB,usdB=ethValB+solValB;
+    var ethA=eP>0?usdA/eP:0,ethB=eP>0?usdB/eP:0;
     $('cmpUsdA').textContent=fmt(usdA); $('cmpEthValA').textContent='= '+fmt2(ethA)+' ETH';
     $('cmpUsdB').textContent=fmt(usdB); $('cmpEthValB').textContent='= '+fmt2(ethB)+' ETH';
+    $('cmpAllocA').textContent=usdA>0?('ETH '+Math.round(ethValA/usdA*100)+'% · SOL '+Math.round(solValA/usdA*100)+'%'):'';
+    $('cmpAllocB').textContent=usdB>0?('ETH '+Math.round(ethValB/usdB*100)+'% · SOL '+Math.round(solValB/usdB*100)+'%'):'';
     var dUsd=usdB-usdA,dEth=ethB-ethA,v=$('cmpVerdict');
     if(usdA<=0&&usdB<=0){ v.innerHTML='Ingresa cantidades para comparar.'; return; }
     var tie=Math.abs(dEth)<=Math.max(0.02,Math.abs(ethA)*0.001);
     var who=tie?'Prácticamente iguales':(dEth>0?'La <b class="g">simulación</b> rinde más':'<b class="g">Tu cartera</b> rinde más');
     var cls=dEth>=0?'p':'r';
-    v.innerHTML=who+': '+(dEth>=0?'+':'−')+'<b class="'+cls+'">'+fmt2(Math.abs(dEth))+' ETH</b> ('+(dUsd>=0?'+':'−')+'$'+fmt(Math.abs(dUsd))+') a estos precios.'+
-      '<span class="tip">Convertir a precio de mercado conserva el valor — para ver si <b>conviene de cara al futuro</b>, sube los precios (p. ej. ETH 3.000, SOL 90) y compara qué mezcla te deja más ETH.</span>';
+    var line1=who+': '+(dEth>=0?'+':'−')+'<b class="'+cls+'">'+fmt2(Math.abs(dEth))+' ETH</b> ('+(dUsd>=0?'+':'−')+'$'+fmt(Math.abs(dUsd))+') a estos precios.';
+    var line2;
+    if(sA===sB){ line2='El precio de SOL no cambia el resultado: ambas tienen la misma cantidad de SOL.'; }
+    else {
+      var bs=eP*(eB-eA)/(sA-sB);
+      if(bs<=0){ line2='A cualquier precio de SOL realista, '+(dEth>0?'la simulación':'tu cartera')+' rinde más (con ETH a $'+fmt(eP)+').'; }
+      else {
+        var simMoreSol=sB>sA;
+        line2='Se igualan con <b class="g">SOL ≈ $'+fmtPx(bs)+'</b> (ETH a $'+fmt(eP)+'). Por encima conviene '+(simMoreSol?'la simulación':'tu cartera')+'; por debajo, '+(simMoreSol?'tu cartera':'la simulación')+'.';
+      }
+    }
+    v.innerHTML=line1+'<span class="tip">'+line2+'</span>';
   }
   ['cmpEthA','cmpSolA','cmpEthB','cmpSolB'].forEach(function(id){ var el=$(id); if(el)el.addEventListener('input',function(){ cmpCalc(); saveState(); }); });
   ['cmpEthP','cmpSolP'].forEach(function(id){ var el=$(id); if(el)el.addEventListener('input',function(){ cmpPricesEdited=true; $('cmpEthPF').classList.remove('islive'); $('cmpSolPF').classList.remove('islive'); cmpCalc(); }); });
