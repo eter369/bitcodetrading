@@ -247,6 +247,21 @@
   .foot{text-align:center;color:var(--muted-2);font-size:11.5px;margin-top:28px;line-height:1.7}
   .foot a{color:var(--muted);text-decoration:none;border-bottom:1px dotted var(--muted-2)}
 
+  /* comparador ¿conviene convertir? */
+  .cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  @media(max-width:560px){.cmp-grid{grid-template-columns:1fr}}
+  .cmp-col{background:var(--panel-2);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .cmp-col.sim{border-color:rgba(212,175,55,.35)}
+  .cmp-h{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-2);font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .cmp-h .badge{font-size:9px;letter-spacing:.06em;color:var(--gold-soft);background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.3);border-radius:99px;padding:2px 8px;text-transform:none}
+  .cmp-tot{margin-top:8px;border-top:1px solid var(--line);padding-top:12px}
+  .cmp-usd{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+  .cmp-usd .u{font-size:.46em;vertical-align:.34em;color:var(--gold);margin-right:2px}
+  .cmp-eth{font-size:12px;color:var(--gold-soft);margin-top:5px;font-variant-numeric:tabular-nums}
+  .cmp-verdict{margin-top:16px;background:var(--panel);border:1px solid var(--line-soft);border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.6;color:var(--ink)}
+  .cmp-verdict b.p{color:var(--pos)}.cmp-verdict b.r{color:var(--neg)}.cmp-verdict b.g{color:var(--gold-soft)}
+  .cmp-verdict .tip{display:block;margin-top:8px;font-size:11.5px;color:var(--muted-2);line-height:1.6}
+
   /* install button + toasts */
   .install{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:60;display:none;align-items:center;gap:8px;
     background:#fff;color:#11131a;border:none;border-radius:99px;font-family:inherit;font-weight:700;font-size:13px;padding:11px 18px;cursor:pointer;box-shadow:0 8px 30px rgba(0,0,0,.4)}
@@ -420,6 +435,34 @@
       </table>
       <p class="note" style="margin-top:18px">Lo importante: tu objetivo era ser <b>ETH-base</b> y bajar riesgo. Lo cumpliste — más ETH, menos SOL, y tu marcador en ETH subió. El costo de oportunidad (~3,6 ETH) es el precio normal de rebalancear: cambias algo de upside por estabilidad. Es coherente con quien quieres ser.</p>
     </div>
+
+    <div class="card">
+      <h2>¿Conviene convertir? · simula y compara</h2>
+      <p class="hint">Pon una mezcla hipotética de ETH y SOL y compárala con tu cartera, a los precios que quieras. Mide en ETH (tu unidad) y en dólares.</p>
+      <div class="grid" style="margin-bottom:14px">
+        <div class="eth-f"><label for="cmpEthP">Precio ETH</label><div class="field islive" id="cmpEthPF"><span class="pre">$</span><input id="cmpEthP" type="number" value="1572" step="1" inputmode="decimal"><span class="livetag">EN VIVO</span></div></div>
+        <div class="sol-f"><label for="cmpSolP">Precio SOL</label><div class="field islive" id="cmpSolPF"><span class="pre">$</span><input id="cmpSolP" type="number" value="73" step="0.01" inputmode="decimal"><span class="livetag">EN VIVO</span></div></div>
+      </div>
+      <div class="cmp-grid">
+        <div class="cmp-col">
+          <div class="cmp-h">Tu cartera</div>
+          <div class="eth-f" style="margin-bottom:11px"><label for="cmpEthA">Cantidad ETH</label><div class="field"><input class="nopre" id="cmpEthA" type="number" value="90.7" step="0.1" inputmode="decimal"></div></div>
+          <div class="sol-f"><label for="cmpSolA">Cantidad SOL</label><div class="field"><input class="nopre" id="cmpSolA" type="number" value="1001" step="1" inputmode="decimal"></div></div>
+          <div class="cmp-tot"><div class="cmp-usd"><span class="u">$</span><span id="cmpUsdA">0</span></div><div class="cmp-eth" id="cmpEthValA">= 0 ETH</div></div>
+        </div>
+        <div class="cmp-col sim">
+          <div class="cmp-h">Simulación <span class="badge">¿qué pasaría si…?</span></div>
+          <div class="eth-f" style="margin-bottom:11px"><label for="cmpEthB">Cantidad ETH</label><div class="field"><input class="nopre" id="cmpEthB" type="number" value="50" step="0.1" inputmode="decimal"></div></div>
+          <div class="sol-f"><label for="cmpSolB">Cantidad SOL</label><div class="field"><input class="nopre" id="cmpSolB" type="number" value="2000" step="1" inputmode="decimal"></div></div>
+          <div class="cmp-tot"><div class="cmp-usd"><span class="u">$</span><span id="cmpUsdB">0</span></div><div class="cmp-eth" id="cmpEthValB">= 0 ETH</div></div>
+        </div>
+      </div>
+      <div class="cmp-verdict" id="cmpVerdict"></div>
+      <div class="ctrlrow">
+        <button class="btn-live" id="cmpUseLive" type="button"><span class="sd" aria-hidden="true"></span>Precios en vivo</button>
+        <button class="reset" id="cmpReset" type="button">Reiniciar simulación</button>
+      </div>
+    </div>
   </div>
 
   <!-- CALCULADORA -->
@@ -502,7 +545,7 @@
   function loadState(){ try{ return JSON.parse(localStorage.getItem(LS))||{}; }catch(e){ return {}; } }
   var S=loadState();
   var saveT=0;
-  function persistNow(){ try{ localStorage.setItem(LS,JSON.stringify({hold:HOLD,base:BASE,baseLabel:BASE_LABEL,watch:WATCH,alerts:alerts,hist:history,calc:calcSnapshot()})); return true; }catch(e){ return false; } }
+  function persistNow(){ try{ localStorage.setItem(LS,JSON.stringify({hold:HOLD,base:BASE,baseLabel:BASE_LABEL,watch:WATCH,alerts:alerts,hist:history,calc:calcSnapshot(),cmp:cmpSnapshot()})); return true; }catch(e){ return false; } }
   function saveState(){ if(saveT) return; saveT=setTimeout(function(){ saveT=0; persistNow(); },300); }
 
   /* ---------- estado ---------- */
@@ -691,6 +734,12 @@
       $('ethPriceF').classList.add('islive'); $('solPriceF').classList.add('islive');
     }
     calc(); scn();
+    if(!cmpPricesEdited&&live.ETH.price>0&&live.SOL.price>0){
+      var ce=document.activeElement;
+      if(ce!==$('cmpEthP')) $('cmpEthP').value=(+live.ETH.price.toFixed(2));
+      if(ce!==$('cmpSolP')) $('cmpSolP').value=(+live.SOL.price.toFixed(2));
+    }
+    cmpCalc();
   }
 
   /* ---------- alertas de precio ---------- */
@@ -959,6 +1008,31 @@
   $('installBtn').addEventListener('click',function(){ if(!deferred){ $('installBtn').classList.remove('on'); return; } deferred.prompt(); deferred.userChoice.finally(function(){ deferred=null; $('installBtn').classList.remove('on'); }); });
   window.addEventListener('appinstalled',function(){ $('installBtn').classList.remove('on'); });
 
+  /* ---------- comparador: ¿conviene convertir? ---------- */
+  var cmpPricesEdited=false;
+  var CMP_DEF_B={ETH:50,SOL:2000};
+  function cmpSnapshot(){ return {ethA:+$('cmpEthA').value||0,solA:+$('cmpSolA').value||0,ethB:+$('cmpEthB').value||0,solB:+$('cmpSolB').value||0}; }
+  function cmpCalc(){
+    if(!$('cmpVerdict')) return;
+    var eP=cmpPricesEdited?(+$('cmpEthP').value||0):(live.ETH.price||0);
+    var sP=cmpPricesEdited?(+$('cmpSolP').value||0):(live.SOL.price||0);
+    var eA=+$('cmpEthA').value||0,sA=+$('cmpSolA').value||0,eB=+$('cmpEthB').value||0,sB=+$('cmpSolB').value||0;
+    var usdA=eP*eA+sP*sA,usdB=eP*eB+sP*sB,ethA=eP>0?usdA/eP:0,ethB=eP>0?usdB/eP:0;
+    $('cmpUsdA').textContent=fmt(usdA); $('cmpEthValA').textContent='= '+fmt2(ethA)+' ETH';
+    $('cmpUsdB').textContent=fmt(usdB); $('cmpEthValB').textContent='= '+fmt2(ethB)+' ETH';
+    var dUsd=usdB-usdA,dEth=ethB-ethA,v=$('cmpVerdict');
+    if(usdA<=0&&usdB<=0){ v.innerHTML='Ingresa cantidades para comparar.'; return; }
+    var tie=Math.abs(dEth)<=Math.max(0.02,Math.abs(ethA)*0.001);
+    var who=tie?'Prácticamente iguales':(dEth>0?'La <b class="g">simulación</b> rinde más':'<b class="g">Tu cartera</b> rinde más');
+    var cls=dEth>=0?'p':'r';
+    v.innerHTML=who+': '+(dEth>=0?'+':'−')+'<b class="'+cls+'">'+fmt2(Math.abs(dEth))+' ETH</b> ('+(dUsd>=0?'+':'−')+'$'+fmt(Math.abs(dUsd))+') a estos precios.'+
+      '<span class="tip">Convertir a precio de mercado conserva el valor — para ver si <b>conviene de cara al futuro</b>, sube los precios (p. ej. ETH 3.000, SOL 90) y compara qué mezcla te deja más ETH.</span>';
+  }
+  ['cmpEthA','cmpSolA','cmpEthB','cmpSolB'].forEach(function(id){ var el=$(id); if(el)el.addEventListener('input',function(){ cmpCalc(); saveState(); }); });
+  ['cmpEthP','cmpSolP'].forEach(function(id){ var el=$(id); if(el)el.addEventListener('input',function(){ cmpPricesEdited=true; $('cmpEthPF').classList.remove('islive'); $('cmpSolPF').classList.remove('islive'); cmpCalc(); }); });
+  if($('cmpUseLive'))$('cmpUseLive').addEventListener('click',function(){ cmpPricesEdited=false; if(live.ETH.price>0)$('cmpEthP').value=(+live.ETH.price.toFixed(2)); if(live.SOL.price>0)$('cmpSolP').value=(+live.SOL.price.toFixed(2)); $('cmpEthPF').classList.add('islive'); $('cmpSolPF').classList.add('islive'); cmpCalc(); });
+  if($('cmpReset'))$('cmpReset').addEventListener('click',function(){ $('cmpEthA').value=HOLD.ETH; $('cmpSolA').value=HOLD.SOL; $('cmpEthB').value=CMP_DEF_B.ETH; $('cmpSolB').value=CMP_DEF_B.SOL; cmpPricesEdited=false; if(live.ETH.price>0)$('cmpEthP').value=(+live.ETH.price.toFixed(2)); if(live.SOL.price>0)$('cmpSolP').value=(+live.SOL.price.toFixed(2)); $('cmpEthPF').classList.add('islive'); $('cmpSolPF').classList.add('islive'); cmpCalc(); saveState(); });
+
   /* ---------- gráfico de velas (modal) ---------- */
   var TF={'1D':{interval:'15m',limit:96,fmt:'time'},'1W':{interval:'1h',limit:168,fmt:'day'},'1M':{interval:'4h',limit:180,fmt:'day'},'3M':{interval:'1d',limit:90,fmt:'date'}};
   var chartKey=null,chartTf='1D',chartData=null,chartGeom=null,chartFocus=null,chartRaf=0;
@@ -1052,6 +1126,13 @@
   // restaurar cartera guardada en los inputs
   $('ethQty').value=HOLD.ETH; $('solQty').value=HOLD.SOL; $('otros').value=HOLD.OTROS;
   if(S.calc){ if(isNum(S.calc.ethQty))$('ethQty').value=S.calc.ethQty; if(isNum(S.calc.solQty))$('solQty').value=S.calc.solQty; if(isNum(S.calc.otros))$('otros').value=S.calc.otros; }
+  if(live.ETH.price>0)$('cmpEthP').value=(+live.ETH.price.toFixed(2));
+  if(live.SOL.price>0)$('cmpSolP').value=(+live.SOL.price.toFixed(2));
+  $('cmpEthA').value=(S.cmp&&isNum(S.cmp.ethA))?S.cmp.ethA:HOLD.ETH;
+  $('cmpSolA').value=(S.cmp&&isNum(S.cmp.solA))?S.cmp.solA:HOLD.SOL;
+  $('cmpEthB').value=(S.cmp&&isNum(S.cmp.ethB))?S.cmp.ethB:CMP_DEF_B.ETH;
+  $('cmpSolB').value=(S.cmp&&isNum(S.cmp.solB))?S.cmp.solB:CMP_DEF_B.SOL;
+  cmpCalc();
   COINS.forEach(function(c){ renderCoin(c.key,null); });
   recalcHero(); calc(); scn(); renderHistory();
 
