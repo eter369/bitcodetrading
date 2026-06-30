@@ -131,7 +131,7 @@
   .mgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
   @media(max-width:720px){.mgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media(max-width:380px){.mgrid{grid-template-columns:1fr}}
-  .mcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 16px 12px;position:relative;overflow:hidden}
+  .mcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 16px 12px;position:relative;overflow:hidden;cursor:pointer}
   .mcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,var(--muted-2))}
   .mcard.up{animation:cardUp .7s ease}.mcard.down{animation:cardDn .7s ease}
   @keyframes cardUp{0%{background:rgba(61,220,151,.10)}100%{background:var(--panel)}}
@@ -250,6 +250,26 @@
   .toast b{color:var(--gold-soft)}
   @keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
+  /* chart modal */
+  .modal{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .modal[hidden]{display:none}
+  .modal-bg{position:absolute;inset:0;background:rgba(5,6,9,.74);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+  .modal-card{position:relative;width:min(680px,96vw);max-height:90vh;overflow:auto;background:#0f1116;border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:toastIn .25s ease}
+  .mc-head{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+  .mc-head .mc-sym{font-size:16px;font-weight:700}
+  .mc-head .mc-name{font-size:12px;color:var(--muted-2)}
+  .mc-head .mc-price{margin-left:auto;font-family:'DM Mono',monospace;font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
+  .mc-head .mc-price .pre{color:var(--gold);font-size:12px}
+  .mc-head .mc-chg{font-size:12px;font-weight:600}
+  .mc-close{background:rgba(255,255,255,.08);border:none;color:#fff;width:36px;height:36px;border-radius:10px;font-size:19px;line-height:1;cursor:pointer;flex:0 0 auto}
+  .mc-close:hover{background:rgba(255,255,255,.16)}
+  .mc-tabs{display:flex;gap:6px;margin-bottom:10px}
+  .mc-tabs button{background:rgba(255,255,255,.05);border:1px solid var(--line-soft);color:var(--muted);font-family:inherit;font-size:12px;font-weight:600;padding:7px 14px;border-radius:99px;cursor:pointer;min-height:36px}
+  .mc-tabs button.on{background:rgba(212,175,55,.14);border-color:rgba(212,175,55,.4);color:var(--gold-soft)}
+  .mc-canvas{display:block;width:100%;height:300px;border-radius:10px;touch-action:none;background:rgba(255,255,255,.015)}
+  .mc-tip{font-family:'DM Mono',monospace;font-size:11.5px;color:var(--muted);margin-top:10px;min-height:16px;font-variant-numeric:tabular-nums;line-height:1.5}
+  .mc-tip b{color:#fff}
+
   @keyframes upIn{from{opacity:0;transform:translateY(16px);filter:blur(7px)}to{opacity:1;transform:none;filter:blur(0)}}
   .animate{opacity:0;animation:upIn .9s cubic-bezier(.16,1,.3,1) forwards}
 
@@ -279,6 +299,26 @@
 
 <button class="install" id="installBtn" type="button">📲 Instalar app</button>
 <div class="toasts" id="toasts" aria-live="polite"></div>
+
+<!-- CHART MODAL -->
+<div class="modal" id="chartModal" role="dialog" aria-modal="true" aria-label="Gráfico de precio" hidden>
+  <div class="modal-bg" id="chartBg"></div>
+  <div class="modal-card">
+    <div class="mc-head">
+      <span class="mc-sym" id="mcSym">—</span><span class="mc-name" id="mcName"></span>
+      <span class="mc-price"><span class="pre">$</span><span id="mcPrice">—</span></span><span class="mc-chg" id="mcChg"></span>
+      <button class="mc-close" id="mcClose" type="button" aria-label="Cerrar gráfico">×</button>
+    </div>
+    <div class="mc-tabs" id="mcTabs">
+      <button data-tf="1D" class="on" type="button">1D</button>
+      <button data-tf="1W" type="button">1S</button>
+      <button data-tf="1M" type="button">1M</button>
+      <button data-tf="3M" type="button">3M</button>
+    </div>
+    <canvas class="mc-canvas" id="mcCanvas" aria-label="Gráfico de velas"></canvas>
+    <div class="mc-tip" id="mcTip">Toca o pasa el cursor por el gráfico para ver el detalle.</div>
+  </div>
+</div>
 
 <!-- LIVE TICKER -->
 <div class="ticker">
@@ -608,6 +648,7 @@
     var cur=live[meta.key], prev=cur.price;
     live[meta.key]={price:price, chg:isNum(chg)?chg:cur.chg, hi:(isNum(hi)&&hi>0)?hi:cur.hi, lo:(isNum(lo)&&lo>0)?lo:cur.lo};
     renderCoin(meta.key,prev);
+    if(chartKey===meta.key) updChartHeader();
     checkAlerts(meta.key,prev,price);
     if(meta.key==='ETH'||meta.key==='SOL') onPriceMove();
     stampUpdated(); announceLive();
@@ -811,7 +852,8 @@
   }
   // delegación de clicks en el mercado
   $('mgrid').addEventListener('click',function(e){
-    var b=e.target.closest('button'); if(!b) return;
+    var b=e.target.closest('button');
+    if(!b){ var oc=e.target.closest('.mcard'); if(oc && !e.target.closest('.alertrow')) openChart(oc.getAttribute('data-k')); return; }
     var key=b.getAttribute('data-k');
     if(b.classList.contains('rm')){ removeCoin(key); return; }
     if(b.classList.contains('bell')){
@@ -898,6 +940,94 @@
   window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); deferred=e; $('installBtn').classList.add('on'); });
   $('installBtn').addEventListener('click',function(){ if(!deferred){ $('installBtn').classList.remove('on'); return; } deferred.prompt(); deferred.userChoice.finally(function(){ deferred=null; $('installBtn').classList.remove('on'); }); });
   window.addEventListener('appinstalled',function(){ $('installBtn').classList.remove('on'); });
+
+  /* ---------- gráfico de velas (modal) ---------- */
+  var TF={'1D':{interval:'15m',limit:96,fmt:'time'},'1W':{interval:'1h',limit:168,fmt:'day'},'1M':{interval:'4h',limit:180,fmt:'day'},'3M':{interval:'1d',limit:90,fmt:'date'}};
+  var chartKey=null,chartTf='1D',chartData=null,chartGeom=null,chartFocus=null,chartRaf=0;
+  function symOf(key){ var s=null; COINS.forEach(function(c){ if(c.key===key)s=c.sym; }); return s; }
+  function nameOf(key){ var s=key; COINS.forEach(function(c){ if(c.key===key)s=c.name; }); return s; }
+  function fmtDate(dt,mode){
+    var p=function(x){return String(x).padStart(2,'0');};
+    if(mode==='time') return p(dt.getHours())+':'+p(dt.getMinutes());
+    if(mode==='day') return p(dt.getDate())+'/'+p(dt.getMonth()+1)+' '+p(dt.getHours())+'h';
+    if(mode==='date') return p(dt.getDate())+'/'+p(dt.getMonth()+1);
+    return p(dt.getDate())+'/'+p(dt.getMonth()+1)+' '+p(dt.getHours())+':'+p(dt.getMinutes());
+  }
+  function updChartHeader(){ if(!chartKey||!live[chartKey])return; var d=live[chartKey]; $('mcPrice').textContent=fmtPx(d.price); var ch=$('mcChg'); ch.textContent=chgStr(d.chg); ch.className='mc-chg '+(d.chg>=0?'pos':'neg'); }
+  function openChart(key){
+    if(!key||!live[key])return;
+    chartKey=key; chartTf='1D'; chartData=null;
+    $('mcSym').textContent=key; $('mcName').textContent=nameOf(key); updChartHeader();
+    document.querySelectorAll('#mcTabs button').forEach(function(b){ b.classList.toggle('on',b.getAttribute('data-tf')==='1D'); });
+    chartFocus=document.activeElement;
+    $('chartModal').hidden=false; $('mcClose').focus(); loadChart();
+  }
+  function closeChart(){ $('chartModal').hidden=true; chartKey=null; chartData=null; if(chartFocus&&chartFocus.focus){try{chartFocus.focus();}catch(e){}} }
+  function loadChart(){
+    var tf=TF[chartTf], sym=symOf(chartKey); if(!sym)return;
+    $('mcTip').textContent='Cargando…';
+    var hosts=hostOrder(), idx=0;
+    (function tryH(){
+      if(idx>=hosts.length){ $('mcTip').textContent='No se pudo cargar el gráfico.'; return; }
+      var host=hosts[idx++];
+      fetchT(host+'/api/v3/klines?symbol='+sym+'&interval='+tf.interval+'&limit='+tf.limit).then(function(r){
+        if(!r.ok) return tryH();
+        return r.json().then(function(k){
+          if(!Array.isArray(k)||!k.length) return tryH();
+          chartData=k.map(function(row){return {t:+row[0],o:+row[1],h:+row[2],l:+row[3],c:+row[4],v:+row[5]};}).filter(function(d){return isNum(d.o)&&isNum(d.c)&&isNum(d.h)&&isNum(d.l);});
+          $('mcTip').textContent='Toca o pasa el cursor por el gráfico para ver el detalle.';
+          drawChart(-1);
+        });
+      }).catch(function(){ tryH(); });
+    })();
+  }
+  function drawChart(hoverIdx){
+    var cv=$('mcCanvas'); if(!cv||!chartData||!chartData.length)return;
+    var DPR=Math.min(window.devicePixelRatio||1,2);
+    var cssW=cv.clientWidth||cv.offsetWidth||600, cssH=300;
+    cv.width=Math.round(cssW*DPR); cv.height=Math.round(cssH*DPR);
+    var ctx=cv.getContext('2d'); ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,cssW,cssH);
+    var data=chartData,n=data.length;
+    var padL=8,padR=60,padT=10,padB=36,volH=40;
+    var plotW=cssW-padL-padR, plotH=cssH-padT-padB-volH;
+    var min=Infinity,max=-Infinity,vmax=0;
+    data.forEach(function(d){ if(d.l<min)min=d.l; if(d.h>max)max=d.h; if(d.v>vmax)vmax=d.v; });
+    var range=(max-min)||1;
+    function y(p){ return padT+(1-(p-min)/range)*plotH; }
+    var cw=plotW/n;
+    ctx.font='10px "DM Mono", monospace'; ctx.textBaseline='middle'; ctx.lineWidth=1;
+    for(var gi=0;gi<=4;gi++){ var pv=min+range*gi/4, yy=y(pv); ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.beginPath();ctx.moveTo(padL,yy);ctx.lineTo(padL+plotW,yy);ctx.stroke(); ctx.fillStyle='rgba(255,255,255,.42)'; ctx.textAlign='left'; ctx.fillText('$'+fmtPx(pv),padL+plotW+6,yy); }
+    data.forEach(function(d,i){
+      var x=padL+i*cw+cw/2, up=d.c>=d.o, col=up?'#3ddc97':'#ff6b6b';
+      var vh=vmax?(d.v/vmax)*(volH-6):0; ctx.fillStyle=up?'rgba(61,220,151,.25)':'rgba(255,107,107,.25)';
+      ctx.fillRect(x-Math.max(1,cw*0.3), cssH-padB-vh, Math.max(1.5,cw*0.6), vh);
+      ctx.strokeStyle=col; ctx.beginPath();ctx.moveTo(x,y(d.h));ctx.lineTo(x,y(d.l));ctx.stroke();
+      var bt=y(Math.max(d.o,d.c)),bb=y(Math.min(d.o,d.c)),bw=Math.max(1.5,cw*0.62);
+      ctx.fillStyle=col; ctx.fillRect(x-bw/2,bt,bw,Math.max(1,bb-bt));
+    });
+    var ly=y(data[n-1].c); ctx.strokeStyle='rgba(232,212,154,.55)'; ctx.setLineDash([4,3]); ctx.beginPath();ctx.moveTo(padL,ly);ctx.lineTo(padL+plotW,ly);ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,255,255,.42)'; ctx.textBaseline='alphabetic';
+    function lab(i,al){ var dd=data[i],dt=new Date(dd.t),s=fmtDate(dt,TF[chartTf].fmt),x=padL+i*cw+cw/2; ctx.textAlign=al; ctx.fillText(s,Math.min(Math.max(x,padL+2),padL+plotW-2),cssH-padB+15); }
+    lab(0,'left'); lab(Math.floor(n/2),'center'); lab(n-1,'right');
+    chartGeom={padL:padL,cw:cw,n:n};
+    if(hoverIdx>=0&&hoverIdx<n){
+      var hd=data[hoverIdx],hx=padL+hoverIdx*cw+cw/2;
+      ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.beginPath();ctx.moveTo(hx,padT);ctx.lineTo(hx,cssH-padB);ctx.stroke();
+      $('mcTip').innerHTML=fmtDate(new Date(hd.t),'full')+' · A <b>'+fmtPx(hd.o)+'</b> · Máx <b>'+fmtPx(hd.h)+'</b> · Mín <b>'+fmtPx(hd.l)+'</b> · C <b>'+fmtPx(hd.c)+'</b>';
+    }
+  }
+  $('mcClose').addEventListener('click',closeChart);
+  $('chartBg').addEventListener('click',closeChart);
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&!$('chartModal').hidden)closeChart(); });
+  document.querySelectorAll('#mcTabs button').forEach(function(b){ b.addEventListener('click',function(){ chartTf=b.getAttribute('data-tf'); document.querySelectorAll('#mcTabs button').forEach(function(x){x.classList.toggle('on',x===b);}); loadChart(); }); });
+  (function(){
+    var cv=$('mcCanvas'); if(!cv)return;
+    var lastI=-2;
+    function onMove(e){ if(!chartData||!chartGeom)return; var rect=cv.getBoundingClientRect(); var clientX=e.touches&&e.touches[0]?e.touches[0].clientX:e.clientX; var px=clientX-rect.left; var i=Math.floor((px-chartGeom.padL)/chartGeom.cw); i=Math.max(0,Math.min(chartGeom.n-1,i)); if(i===lastI)return; lastI=i; drawChart(i); }
+    cv.addEventListener('pointermove',onMove); cv.addEventListener('pointerdown',onMove);
+    cv.addEventListener('pointerleave',function(){ drawChart(-1); });
+  })();
+  window.addEventListener('resize',function(){ if(!$('chartModal').hidden) drawChart(-1); });
 
   /* ---------- boot ---------- */
   buildCoinDOM();
