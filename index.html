@@ -156,13 +156,19 @@
   .mcard .activealert{display:none;font-size:10.5px;color:var(--gold-soft);margin-top:6px}
   .mcard .activealert.on{display:block}
 
-  .tabs{display:flex;gap:4px;margin:30px 0 22px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
-  .tabs::-webkit-scrollbar{display:none}
-  .tab{flex:0 0 auto;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:13px 16px;cursor:pointer;position:relative;white-space:nowrap;transition:color .15s;min-height:44px}
-  .tab:hover{color:var(--ink)}.tab.active{color:var(--gold)}
-  .tab:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
-  .tab.active::after{content:'';position:absolute;left:14px;right:14px;bottom:-1px;height:2px;background:var(--gold);border-radius:2px}
-  .panel-view{display:none;animation:fade .25s ease}.panel-view.active{display:block}
+  .tabwrap{position:sticky;top:var(--tickerH,44px);z-index:25;margin:30px 0 22px;padding:10px 0}
+  .tabwrap::before{content:'';position:absolute;left:-16px;right:-16px;top:0;bottom:0;z-index:-1;pointer-events:none;background:linear-gradient(rgba(9,10,13,0),rgba(9,10,13,.58) 24%,rgba(9,10,13,.58) 76%,rgba(9,10,13,0))}
+  .segctl{position:relative;display:inline-flex;gap:2px;max-width:100%;background:rgba(255,255,255,.05);border:1px solid var(--line-soft);border-radius:14px;padding:4px;overflow-x:auto;scrollbar-width:none;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .segctl::-webkit-scrollbar{display:none}
+  .seg-ind{position:absolute;top:4px;left:4px;width:0;height:calc(100% - 8px);background:rgba(212,175,55,.16);border:1px solid rgba(212,175,55,.42);border-radius:10px;z-index:0;pointer-events:none;transition:left .32s cubic-bezier(.5,.05,.2,1),width .32s cubic-bezier(.5,.05,.2,1)}
+  .tab{position:relative;z-index:1;flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:10px 15px;border-radius:10px;cursor:pointer;white-space:nowrap;transition:color .2s;min-height:42px}
+  .tab .ti{width:16px;height:16px;flex:0 0 auto;opacity:.85}
+  .tab:hover{color:var(--ink)}.tab.active{color:var(--gold-soft)}
+  .tab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .tab .livedot{width:7px;height:7px;border-radius:99px;background:var(--pos);box-shadow:0 0 0 0 rgba(61,220,151,.6);animation:pulse 1.8s infinite;margin-left:1px}
+  @media(max-width:560px){.segctl{width:100%}}
+  @media(max-width:640px){.segctl{-webkit-backdrop-filter:none;backdrop-filter:none}}
+  .panel-view{display:none;animation:fade .28s ease}.panel-view.active{display:block}
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
   .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 20px;margin-bottom:16px}
@@ -376,10 +382,16 @@
     <div class="mgrid" id="mgrid"></div>
   </div>
 
-  <div class="tabs" role="tablist" aria-label="Secciones del panel">
-    <button class="tab active" data-tab="recorrido" id="tab-recorrido" role="tab" aria-selected="true" aria-controls="recorrido">Mi recorrido</button>
-    <button class="tab" data-tab="calc" id="tab-calc" role="tab" aria-selected="false" aria-controls="calc" tabindex="-1">Calculadora en vivo</button>
-    <button class="tab" data-tab="escenarios" id="tab-escenarios" role="tab" aria-selected="false" aria-controls="escenarios" tabindex="-1">Escenarios 2027</button>
+  <div class="tabwrap">
+    <div class="segctl" id="segctl" role="tablist" aria-label="Secciones del panel">
+      <span class="seg-ind" id="segInd" aria-hidden="true"></span>
+      <button class="tab active" data-tab="recorrido" id="tab-recorrido" role="tab" aria-selected="true" aria-controls="recorrido">
+        <svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M7.6 16.4 16.4 7.6" stroke-dasharray="2.2 2.6"/></svg><span>Mi recorrido</span></button>
+      <button class="tab" data-tab="calc" id="tab-calc" role="tab" aria-selected="false" aria-controls="calc" tabindex="-1">
+        <svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11.5" x2="8.01" y2="11.5"/><line x1="12" y1="11.5" x2="12.01" y2="11.5"/><line x1="16" y1="11.5" x2="16.01" y2="11.5"/><line x1="8" y1="15.5" x2="8.01" y2="15.5"/><line x1="12" y1="15.5" x2="12.01" y2="15.5"/><line x1="16" y1="15.5" x2="16.01" y2="15.5"/></svg><span>Calculadora en vivo</span><span class="livedot" aria-hidden="true"></span></button>
+      <button class="tab" data-tab="escenarios" id="tab-escenarios" role="tab" aria-selected="false" aria-controls="escenarios" tabindex="-1">
+        <svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16 10 10 14 14 20 7"/><path d="M15 7h5v5"/></svg><span>Escenarios 2027</span></button>
+    </div>
   </div>
 
   <!-- RECORRIDO -->
@@ -537,10 +549,12 @@
 
   /* ---------- tabs ---------- */
   var tabEls=Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  function moveSegInd(t){ var ind=$('segInd'); if(!ind||!t)return; ind.style.left=t.offsetLeft+'px'; ind.style.width=t.offsetWidth+'px'; }
   function selectTab(t){
     tabEls.forEach(function(x){ var on=x===t; x.classList.toggle('active',on); x.setAttribute('aria-selected',on?'true':'false'); x.tabIndex=on?0:-1; });
     document.querySelectorAll('.panel-view').forEach(function(x){ x.classList.remove('active'); });
     var panel=$(t.dataset.tab); if(panel)panel.classList.add('active');
+    moveSegInd(t);
   }
   tabEls.forEach(function(t,i){
     t.addEventListener('click',function(){selectTab(t);});
@@ -552,6 +566,10 @@
       if(j!==null){e.preventDefault();selectTab(tabEls[j]);tabEls[j].focus();}
     });
   });
+  function setTickerH(){ var tk=document.querySelector('.ticker'); if(tk) document.documentElement.style.setProperty('--tickerH', tk.offsetHeight+'px'); }
+  function syncSeg(){ setTickerH(); moveSegInd(document.querySelector('.tab.active')); }
+  syncSeg(); setTimeout(syncSeg,60); window.addEventListener('resize',syncSeg);
+  if(document.fonts&&document.fonts.ready){ document.fonts.ready.then(syncSeg); }
 
   /* ---------- cursor glow ---------- */
   (function(){

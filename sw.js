@@ -1,5 +1,5 @@
 /* Service worker — Omraam · Patrimonio Cripto */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = 'omraam-' + VERSION;
 const ASSETS = ['/', '/index.html', '/favicon-v2.png', '/icon-192.png', '/og-cover.jpg', '/poster.jpg', '/manifest.json'];
 
