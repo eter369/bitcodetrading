@@ -264,6 +264,23 @@
   .cmp-verdict{margin-top:16px;background:var(--panel);border:1px solid var(--line-soft);border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.6;color:var(--ink)}
   .cmp-verdict b.p{color:var(--pos)}.cmp-verdict b.r{color:var(--neg)}.cmp-verdict b.g{color:var(--gold-soft)}
   .cmp-verdict .tip{display:block;margin-top:8px;font-size:11.5px;color:var(--muted-2);line-height:1.6}
+  .cmp-sliders{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+  @media(max-width:480px){.cmp-sliders{grid-template-columns:1fr}}
+  .cmp-sl{display:flex;flex-direction:column;gap:9px}
+  .cmp-sl-lab{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2);font-weight:600}
+  .cmp-sl-lab b{color:var(--gold-soft);font-variant-numeric:tabular-nums;margin-left:5px;font-weight:700}
+  input[type=range].cmp-range{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;background:rgba(255,255,255,.13);outline:none;cursor:pointer;margin:6px 0}
+  input[type=range].cmp-range::-webkit-slider-thumb{-webkit-appearance:none;width:19px;height:19px;border-radius:50%;background:#fff;border:2px solid var(--gold);cursor:pointer;box-shadow:0 2px 7px rgba(0,0,0,.45)}
+  input[type=range].cmp-range::-moz-range-thumb{width:19px;height:19px;border-radius:50%;background:#fff;border:2px solid var(--gold);cursor:pointer;box-shadow:0 2px 7px rgba(0,0,0,.45)}
+  input[type=range].cmp-range:focus-visible{box-shadow:0 0 0 3px rgba(212,175,55,.25)}
+  .cmp-chart-wrap{margin-top:6px}
+  .cmp-chart-head{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2);font-weight:600;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:9px}
+  .cmp-legend{display:flex;gap:14px;font-size:11px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400}
+  .cmp-legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+  .cmp-legend i.a{background:var(--eth)}.cmp-legend i.b{background:var(--gold)}
+  #cmpChart{display:block;width:100%;height:200px;touch-action:none;border-radius:10px;background:rgba(255,255,255,.015);border:1px solid var(--line-soft);cursor:crosshair}
+  .cmp-chart-tip{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-top:9px;min-height:15px;font-variant-numeric:tabular-nums;line-height:1.5}
+  .cmp-chart-tip b{color:#fff}
 
   /* install button + toasts */
   .install{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:60;display:none;align-items:center;gap:8px;
@@ -461,6 +478,15 @@
         </div>
       </div>
       <div class="cmp-verdict" id="cmpVerdict"></div>
+      <div class="cmp-sliders">
+        <div class="cmp-sl"><span class="cmp-sl-lab">Precio ETH <b id="slEthVal">$0</b></span><input type="range" class="cmp-range" id="slEth" min="500" max="6000" step="10" aria-label="Precio de ETH (deslizador)"></div>
+        <div class="cmp-sl"><span class="cmp-sl-lab">Precio SOL <b id="slSolVal">$0</b></span><input type="range" class="cmp-range" id="slSol" min="10" max="400" step="1" aria-label="Precio de SOL (deslizador)"></div>
+      </div>
+      <div class="cmp-chart-wrap">
+        <div class="cmp-chart-head">Valor de cartera según el precio de SOL <span class="cmp-legend"><span><i class="a"></i>Tu cartera</span><span><i class="b"></i>Simulación</span></span></div>
+        <canvas id="cmpChart" aria-label="Gráfico de valor de cartera según el precio de SOL"></canvas>
+        <div class="cmp-chart-tip" id="cmpChartTip">Arrastra los deslizadores o toca el gráfico para explorar precios.</div>
+      </div>
       <div class="ctrlrow">
         <button class="btn-live" id="cmpUseLive" type="button"><span class="sd" aria-hidden="true"></span>Precios en vivo</button>
         <button class="reset" id="cmpReset" type="button">Reiniciar simulación</button>
@@ -1054,11 +1080,70 @@
       }
     }
     v.innerHTML=line1+'<span class="tip">'+tip+'</span>';
+    syncSliders(); drawBreakeven();
   }
   ['cmpEthA','cmpSolA','cmpEthB','cmpSolB'].forEach(function(id){ var el=$(id); if(el)el.addEventListener('input',function(){ cmpCalc(); saveState(); }); });
   ['cmpEthP','cmpSolP'].forEach(function(id){ var el=$(id); if(el)el.addEventListener('input',function(){ cmpPricesEdited=true; $('cmpEthPF').classList.remove('islive'); $('cmpSolPF').classList.remove('islive'); cmpCalc(); }); });
   if($('cmpUseLive'))$('cmpUseLive').addEventListener('click',function(){ cmpPricesEdited=false; if(live.ETH.price>0)$('cmpEthP').value=(+live.ETH.price.toFixed(2)); if(live.SOL.price>0)$('cmpSolP').value=(+live.SOL.price.toFixed(2)); $('cmpEthPF').classList.add('islive'); $('cmpSolPF').classList.add('islive'); cmpCalc(); });
   if($('cmpReset'))$('cmpReset').addEventListener('click',function(){ $('cmpEthA').value=HOLD.ETH; $('cmpSolA').value=HOLD.SOL; $('cmpEthB').value=CMP_DEF_B.ETH; $('cmpSolB').value=CMP_DEF_B.SOL; cmpPricesEdited=false; if(live.ETH.price>0)$('cmpEthP').value=(+live.ETH.price.toFixed(2)); if(live.SOL.price>0)$('cmpSolP').value=(+live.SOL.price.toFixed(2)); $('cmpEthPF').classList.add('islive'); $('cmpSolPF').classList.add('islive'); cmpCalc(); saveState(); });
+
+  var cmpChartGeom=null;
+  function cmpPrices(){ return { eP:cmpPricesEdited?(+$('cmpEthP').value||0):(live.ETH.price||0), sP:cmpPricesEdited?(+$('cmpSolP').value||0):(live.SOL.price||0) }; }
+  function syncSliders(){
+    if(!$('slEth'))return; var p=cmpPrices();
+    $('slEth').value=Math.max(500,Math.min(6000,p.eP||0)); $('slEthVal').textContent='$'+fmt(p.eP||0);
+    $('slSol').value=Math.max(10,Math.min(400,p.sP||0)); $('slSolVal').textContent='$'+fmtPx(p.sP||0);
+  }
+  function drawBreakeven(hoverX){
+    var cv=$('cmpChart'); if(!cv)return;
+    var cssW=cv.clientWidth||cv.offsetWidth; if(!cssW)return;
+    var DPR=Math.min(window.devicePixelRatio||1,2), cssH=200;
+    cv.width=Math.round(cssW*DPR); cv.height=Math.round(cssH*DPR);
+    var ctx=cv.getContext('2d'); ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,cssW,cssH);
+    var pr=cmpPrices(), eP=pr.eP, sPcur=pr.sP;
+    var eA=+$('cmpEthA').value||0,sA=+$('cmpSolA').value||0,eB=+$('cmpEthB').value||0,sB=+$('cmpSolB').value||0;
+    if(!(eP>0)){ cmpChartGeom=null; return; }
+    function A(x){return eP*eA+x*sA;} function B(x){return eP*eB+x*sB;}
+    var bs=(sA!==sB)?eP*(eB-eA)/(sA-sB):null;
+    var xmin=0, xmax=Math.max(sPcur*2,(bs&&bs>0?bs*1.4:0),50);
+    var vmin=Math.min(A(xmin),A(xmax),B(xmin),B(xmax)), vmax=Math.max(A(xmin),A(xmax),B(xmin),B(xmax));
+    var vr=(vmax-vmin)||1; vmin-=vr*0.06; vmax+=vr*0.06; vr=vmax-vmin;
+    var padL=8,padR=8,padT=14,padB=26, plotW=cssW-padL-padR, plotH=cssH-padT-padB;
+    function xp(x){return padL+(x-xmin)/(xmax-xmin)*plotW;} function yp(v){return padT+(1-(v-vmin)/vr)*plotH;}
+    ctx.font='9px "DM Mono", monospace'; ctx.textBaseline='middle';
+    for(var gi=0;gi<=3;gi++){ var vv=vmin+vr*gi/3,yy=yp(vv); ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=1; ctx.beginPath();ctx.moveTo(padL,yy);ctx.lineTo(padL+plotW,yy);ctx.stroke(); ctx.fillStyle='rgba(255,255,255,.30)'; ctx.textAlign='left'; ctx.fillText('$'+fmt(vv),padL+3,yy-6); }
+    if(sPcur>=xmin&&sPcur<=xmax){ ctx.strokeStyle='rgba(255,255,255,.16)'; ctx.setLineDash([3,3]); ctx.beginPath();ctx.moveTo(xp(sPcur),padT);ctx.lineTo(xp(sPcur),padT+plotH);ctx.stroke(); ctx.setLineDash([]); }
+    if(bs&&bs>xmin&&bs<xmax){ ctx.strokeStyle='rgba(232,212,154,.6)'; ctx.setLineDash([4,3]); ctx.beginPath();ctx.moveTo(xp(bs),padT);ctx.lineTo(xp(bs),padT+plotH);ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle='#e8d49a'; ctx.textAlign='center'; ctx.fillText('equilibrio $'+fmtPx(bs),Math.min(Math.max(xp(bs),padL+40),padL+plotW-40),padT-5); }
+    ctx.lineWidth=2; ctx.lineJoin='round';
+    ctx.strokeStyle='#7b9bff'; ctx.beginPath();ctx.moveTo(xp(xmin),yp(A(xmin)));ctx.lineTo(xp(xmax),yp(A(xmax)));ctx.stroke();
+    ctx.strokeStyle='#d4af37'; ctx.beginPath();ctx.moveTo(xp(xmin),yp(B(xmin)));ctx.lineTo(xp(xmax),yp(B(xmax)));ctx.stroke();
+    if(sPcur>=xmin&&sPcur<=xmax){ ctx.fillStyle='#7b9bff'; ctx.beginPath();ctx.arc(xp(sPcur),yp(A(sPcur)),3.2,0,6.2832);ctx.fill(); ctx.fillStyle='#d4af37'; ctx.beginPath();ctx.arc(xp(sPcur),yp(B(sPcur)),3.2,0,6.2832);ctx.fill(); }
+    ctx.fillStyle='rgba(255,255,255,.32)'; ctx.textBaseline='alphabetic';
+    ctx.textAlign='left'; ctx.fillText('SOL $'+fmtPx(xmin),padL+2,cssH-8);
+    ctx.textAlign='right'; ctx.fillText('$'+fmtPx(xmax),padL+plotW-2,cssH-8);
+    if(hoverX!=null&&hoverX>=xmin&&hoverX<=xmax){ ctx.strokeStyle='rgba(255,255,255,.32)'; ctx.beginPath();ctx.moveTo(xp(hoverX),padT);ctx.lineTo(xp(hoverX),padT+plotH);ctx.stroke(); }
+    cmpChartGeom={padL:padL,plotW:plotW,xmin:xmin,xmax:xmax};
+  }
+  if($('slEth'))$('slEth').addEventListener('input',function(){ cmpPricesEdited=true; $('cmpEthPF').classList.remove('islive'); $('cmpSolPF').classList.remove('islive'); $('cmpEthP').value=+this.value; cmpCalc(); });
+  if($('slSol'))$('slSol').addEventListener('input',function(){ cmpPricesEdited=true; $('cmpEthPF').classList.remove('islive'); $('cmpSolPF').classList.remove('islive'); $('cmpSolP').value=+this.value; cmpCalc(); });
+  (function(){
+    var cv=$('cmpChart'); if(!cv)return;
+    function at(e,setP){
+      if(!cmpChartGeom)return; var rect=cv.getBoundingClientRect();
+      var clientX=e.touches&&e.touches[0]?e.touches[0].clientX:e.clientX;
+      var g=cmpChartGeom, x=g.xmin+(clientX-rect.left-g.padL)/g.plotW*(g.xmax-g.xmin);
+      x=Math.max(g.xmin,Math.min(g.xmax,x));
+      if(setP){ cmpPricesEdited=true; $('cmpEthPF').classList.remove('islive'); $('cmpSolPF').classList.remove('islive'); $('cmpSolP').value=(+x.toFixed(2)); cmpCalc(); return; }
+      var pr=cmpPrices(), eP=pr.eP, eA=+$('cmpEthA').value||0,sA=+$('cmpSolA').value||0,eB=+$('cmpEthB').value||0,sB=+$('cmpSolB').value||0;
+      var vA=eP*eA+x*sA, vB=eP*eB+x*sB, win=Math.abs(vA-vB)<Math.max(1,vA*0.0005)?'iguales':(vB>vA?'gana la simulación':'gana tu cartera');
+      $('cmpChartTip').innerHTML='SOL $'+fmtPx(x)+' → tu cartera <b>$'+fmt(vA)+'</b> · simulación <b>$'+fmt(vB)+'</b> ('+win+')';
+      drawBreakeven(x);
+    }
+    cv.addEventListener('pointermove',function(e){ at(e,false); });
+    cv.addEventListener('pointerdown',function(e){ at(e,true); });
+    cv.addEventListener('pointerleave',function(){ $('cmpChartTip').textContent='Arrastra los deslizadores o toca el gráfico para explorar precios.'; drawBreakeven(); });
+  })();
+  window.addEventListener('resize',function(){ if($('cmpChart')) drawBreakeven(); });
 
   /* ---------- gráfico de velas (modal) ---------- */
   var TF={'1D':{interval:'15m',limit:96,fmt:'time'},'1W':{interval:'1h',limit:168,fmt:'day'},'1M':{interval:'4h',limit:180,fmt:'day'},'3M':{interval:'1d',limit:90,fmt:'date'}};
