@@ -259,6 +259,8 @@
   .cmp-usd .u{font-size:.46em;vertical-align:.34em;color:var(--gold);margin-right:2px}
   .cmp-eth{font-size:12px;color:var(--gold-soft);margin-top:5px;font-variant-numeric:tabular-nums}
   .cmp-alloc{font-size:11px;color:var(--muted-2);margin-top:6px;font-variant-numeric:tabular-nums}
+  .cmp-bar{height:8px;border-radius:99px;overflow:hidden;display:flex;border:1px solid var(--line);background:var(--panel);margin-top:8px}
+  .cmp-bar i{display:block;height:100%;transition:width .35s ease}.cmp-bar .e{background:var(--eth)}.cmp-bar .s{background:var(--sol)}
   .cmp-verdict{margin-top:16px;background:var(--panel);border:1px solid var(--line-soft);border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.6;color:var(--ink)}
   .cmp-verdict b.p{color:var(--pos)}.cmp-verdict b.r{color:var(--neg)}.cmp-verdict b.g{color:var(--gold-soft)}
   .cmp-verdict .tip{display:block;margin-top:8px;font-size:11.5px;color:var(--muted-2);line-height:1.6}
@@ -449,13 +451,13 @@
           <div class="cmp-h">Tu cartera</div>
           <div class="eth-f" style="margin-bottom:11px"><label for="cmpEthA">Cantidad ETH</label><div class="field"><input class="nopre" id="cmpEthA" type="number" value="90.7" step="0.1" inputmode="decimal"></div></div>
           <div class="sol-f"><label for="cmpSolA">Cantidad SOL</label><div class="field"><input class="nopre" id="cmpSolA" type="number" value="1001" step="1" inputmode="decimal"></div></div>
-          <div class="cmp-tot"><div class="cmp-usd"><span class="u">$</span><span id="cmpUsdA">0</span></div><div class="cmp-eth" id="cmpEthValA">= 0 ETH</div><div class="cmp-alloc" id="cmpAllocA"></div></div>
+          <div class="cmp-tot"><div class="cmp-usd"><span class="u">$</span><span id="cmpUsdA">0</span></div><div class="cmp-eth" id="cmpEthValA">= 0 ETH</div><div class="cmp-alloc" id="cmpAllocA"></div><div class="cmp-bar"><i class="e" id="cmpBarEA"></i><i class="s" id="cmpBarSA"></i></div></div>
         </div>
         <div class="cmp-col sim">
           <div class="cmp-h">Simulación <span class="badge">¿qué pasaría si…?</span></div>
           <div class="eth-f" style="margin-bottom:11px"><label for="cmpEthB">Cantidad ETH</label><div class="field"><input class="nopre" id="cmpEthB" type="number" value="50" step="0.1" inputmode="decimal"></div></div>
           <div class="sol-f"><label for="cmpSolB">Cantidad SOL</label><div class="field"><input class="nopre" id="cmpSolB" type="number" value="2000" step="1" inputmode="decimal"></div></div>
-          <div class="cmp-tot"><div class="cmp-usd"><span class="u">$</span><span id="cmpUsdB">0</span></div><div class="cmp-eth" id="cmpEthValB">= 0 ETH</div><div class="cmp-alloc" id="cmpAllocB"></div></div>
+          <div class="cmp-tot"><div class="cmp-usd"><span class="u">$</span><span id="cmpUsdB">0</span></div><div class="cmp-eth" id="cmpEthValB">= 0 ETH</div><div class="cmp-alloc" id="cmpAllocB"></div><div class="cmp-bar"><i class="e" id="cmpBarEB"></i><i class="s" id="cmpBarSB"></i></div></div>
         </div>
       </div>
       <div class="cmp-verdict" id="cmpVerdict"></div>
@@ -1023,25 +1025,35 @@
     var ethA=eP>0?usdA/eP:0,ethB=eP>0?usdB/eP:0;
     $('cmpUsdA').textContent=fmt(usdA); $('cmpEthValA').textContent='= '+fmt2(ethA)+' ETH';
     $('cmpUsdB').textContent=fmt(usdB); $('cmpEthValB').textContent='= '+fmt2(ethB)+' ETH';
-    $('cmpAllocA').textContent=usdA>0?('ETH '+Math.round(ethValA/usdA*100)+'% · SOL '+Math.round(solValA/usdA*100)+'%'):'';
-    $('cmpAllocB').textContent=usdB>0?('ETH '+Math.round(ethValB/usdB*100)+'% · SOL '+Math.round(solValB/usdB*100)+'%'):'';
+    var peA=usdA>0?ethValA/usdA*100:0, psA=usdA>0?solValA/usdA*100:0;
+    var peB=usdB>0?ethValB/usdB*100:0, psB=usdB>0?solValB/usdB*100:0;
+    $('cmpAllocA').textContent=usdA>0?('ETH '+Math.round(peA)+'% · SOL '+Math.round(psA)+'%'):'';
+    $('cmpAllocB').textContent=usdB>0?('ETH '+Math.round(peB)+'% · SOL '+Math.round(psB)+'%'):'';
+    $('cmpBarEA').style.width=peA+'%'; $('cmpBarSA').style.width=psA+'%';
+    $('cmpBarEB').style.width=peB+'%'; $('cmpBarSB').style.width=psB+'%';
     var dUsd=usdB-usdA,dEth=ethB-ethA,v=$('cmpVerdict');
     if(usdA<=0&&usdB<=0){ v.innerHTML='Ingresa cantidades para comparar.'; return; }
     var tie=Math.abs(dEth)<=Math.max(0.02,Math.abs(ethA)*0.001);
     var who=tie?'Prácticamente iguales':(dEth>0?'La <b class="g">simulación</b> rinde más':'<b class="g">Tu cartera</b> rinde más');
     var cls=dEth>=0?'p':'r';
     var line1=who+': '+(dEth>=0?'+':'−')+'<b class="'+cls+'">'+fmt2(Math.abs(dEth))+' ETH</b> ('+(dUsd>=0?'+':'−')+'$'+fmt(Math.abs(dUsd))+') a estos precios.';
-    var line2;
-    if(sA===sB){ line2='El precio de SOL no cambia el resultado: ambas tienen la misma cantidad de SOL.'; }
+    var eq=[];
+    if(sA!==sB){ var bsSol=eP*(eB-eA)/(sA-sB); if(bsSol>0) eq.push('<b class="g">SOL ≈ $'+fmtPx(bsSol)+'</b>'); }
+    if(eA!==eB){ var bsEth=sP*(sB-sA)/(eA-eB); if(bsEth>0) eq.push('<b class="g">ETH ≈ $'+fmtPx(bsEth)+'</b>'); }
+    var tip='';
+    if(eq.length){ tip='Punto de equilibrio (manteniendo el otro precio): '+eq.join(' · ')+'. '; }
+    if(sA===sB){ tip+='El precio de SOL no cambia el resultado: misma cantidad de SOL en ambas.'; }
     else {
       var bs=eP*(eB-eA)/(sA-sB);
-      if(bs<=0){ line2='A cualquier precio de SOL realista, '+(dEth>0?'la simulación':'tu cartera')+' rinde más (con ETH a $'+fmt(eP)+').'; }
+      if(bs<=0){ tip+='A cualquier precio de SOL realista, '+(dEth>0?'la simulación':'tu cartera')+' rinde más.'; }
       else {
-        var simMoreSol=sB>sA;
-        line2='Se igualan con <b class="g">SOL ≈ $'+fmtPx(bs)+'</b> (ETH a $'+fmt(eP)+'). Por encima conviene '+(simMoreSol?'la simulación':'tu cartera')+'; por debajo, '+(simMoreSol?'tu cartera':'la simulación')+'.';
+        var pct=sP>0?((bs-sP)/sP*100):0;
+        if(Math.abs(dEth)<=Math.max(0.02,Math.abs(ethA)*0.001)){ tip+='Estás justo en el punto de equilibrio.'; }
+        else if(dEth>0){ tip+='La simulación ya conviene: SOL está '+Math.abs(pct).toFixed(0)+'% '+(pct<0?'por encima':'por debajo')+' del equilibrio.'; }
+        else { tip+='Para que convenga convertir a la simulación, SOL debe '+(pct>0?'subir':'bajar')+' ~'+Math.abs(pct).toFixed(0)+'% (a $'+fmtPx(bs)+').'; }
       }
     }
-    v.innerHTML=line1+'<span class="tip">'+line2+'</span>';
+    v.innerHTML=line1+'<span class="tip">'+tip+'</span>';
   }
   ['cmpEthA','cmpSolA','cmpEthB','cmpSolB'].forEach(function(id){ var el=$(id); if(el)el.addEventListener('input',function(){ cmpCalc(); saveState(); }); });
   ['cmpEthP','cmpSolP'].forEach(function(id){ var el=$(id); if(el)el.addEventListener('input',function(){ cmpPricesEdited=true; $('cmpEthPF').classList.remove('islive'); $('cmpSolPF').classList.remove('islive'); cmpCalc(); }); });
